@@ -12,17 +12,13 @@ import { MemberCardComponent } from '../member-card/member-card.component';
   styleUrl: './member-list.component.scss',
 })
 export class MemberListComponent implements OnInit {
-  public members: Member[] = [];
-
-  constructor(private readonly membersService: MembersService) {}
+  constructor(public membersService: MembersService) {}
 
   public ngOnInit(): void {
-    this.loadMembers();
+    if (this.membersService.members().length === 0) this.loadMembers();
   }
 
   public loadMembers(): void {
-    this.membersService.getMembers().subscribe({
-      next: (members) => (this.members = members),
-    });
+    this.membersService.getMembers();
   }
 }
