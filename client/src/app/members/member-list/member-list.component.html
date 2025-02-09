@@ -1,5 +1,27 @@
 <div class="row">
-  <div class="col-2" *ngFor="let member of membersService.members()">
+  <div
+    class="col-2"
+    *ngFor="let member of membersService.paginatedResult()?.items"
+  >
     <app-member-card [member]="member"></app-member-card>
   </div>
+</div>
+
+<div
+  *ngIf="membersService.paginatedResult()?.pagination"
+  class="d-flex justify-content-center"
+>
+  <pagination
+    [boundaryLinks]="true"
+    [totalItems]="(membersService.paginatedResult()?.pagination)!.totalItems"
+    [itemsPerPage]="
+      (membersService.paginatedResult()?.pagination)!.itemsPerPage
+    "
+    (pageChanged)="pageChanged($event)"
+    [maxSize]="10"
+    previousText="&lsaquo;"
+    nextText="&rsaquo;"
+    firstText="&laquo;"
+    lastText="&raquo;"
+  ></pagination>
 </div>

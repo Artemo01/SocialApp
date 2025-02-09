@@ -3,6 +3,8 @@ using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Service.DTOs;
+using Service.Extensions;
+using Service.Helpers;
 using Service.Interfaces;
 
 namespace Service.Controllers;
@@ -11,9 +13,10 @@ namespace Service.Controllers;
 public class UsersController(IUserRepository userRepository, IMapper mapper) : BaseApiController
 {
     [HttpGet]
-    public async Task< ActionResult<IEnumerable<MemberDto>>> GetUsers()
+    public async Task< ActionResult<IEnumerable<MemberDto>>> GetUsers([FromQuery] UserParams userParams)
     {
-        var users = await userRepository.GetMembersAsync();
+        var users = await userRepository.GetMembersAsync(userParams);
+        Response.AddPaginationHeader(users);
         return Ok(users);
     }
     
