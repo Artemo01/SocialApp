@@ -15,6 +15,7 @@ public class UsersController(IUserRepository userRepository, IMapper mapper) : B
     [HttpGet]
     public async Task< ActionResult<IEnumerable<MemberDto>>> GetUsers([FromQuery] UserParams userParams)
     {
+        userParams.CurrentUsername = User.GetUsername();
         var users = await userRepository.GetMembersAsync(userParams);
         Response.AddPaginationHeader(users);
         return Ok(users);
@@ -33,11 +34,7 @@ public class UsersController(IUserRepository userRepository, IMapper mapper) : B
     [HttpPut]
     public async Task<ActionResult> UpdateUser(MemberUpdateDto memberUpdateDto)
     {
-        var username = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-        if (username == null) return BadRequest("No username found");
-        
-        var user = await userRepository.GetUserByUserNameAsync(username);
+        var user = await userRepository.GetUserByUserNameAsync(User.GetUsername());
         
         if(user == null) return BadRequest("User not found");
         

@@ -3,7 +3,8 @@ import { Injectable, signal } from '@angular/core';
 import { environment } from '../../environments/environment';
 import { Member } from '../models/member.model';
 import { Observable, of, Subscription, tap } from 'rxjs';
-import { PaginationResult } from '../models/pagination';
+import { PaginationResult } from '../models/pagination.model';
+import { UserParams } from '../models/userParams.model';
 
 @Injectable({
   providedIn: 'root',
@@ -14,13 +15,16 @@ export class MembersService {
 
   constructor(private readonly http: HttpClient) {}
 
-  public getMembers(pageNumber?: number, pageSize?: number): Subscription {
-    let params = new HttpParams();
+  public getMembers(userParams: UserParams): Subscription {
+    let params = this.setPaginationHeaders(
+      userParams.pageNumber,
+      userParams.pageSize
+    );
 
-    if (pageNumber && pageSize) {
-      params = params.append('pageNumber', pageNumber);
-      params = params.append('pageSize', pageSize);
-    }
+    params = params.append('minAge', userParams.minAge);
+    params = params.append('maxAge', userParams.maxAge);
+    params = params.append('gender', userParams.gender);
+    params = params.append('orderBy', userParams.orderBy);
 
     return this.http
       .get<Member[]>(this.baseUrl + 'users', { observe: 'response', params })
@@ -51,5 +55,19 @@ export class MembersService {
       //   )
       // )
       ();
+  }
+
+  private setPaginationHeaders(
+    pageNumber: number,
+    pageSize: number
+  ): HttpParams {
+    let params = new HttpParams();
+
+    if (pageNumber && pageSize) {
+      params = params.append('pageNumber', pageNumber);
+      params = params.append('pageSize', pageSize);
+    }
+
+    return params;
   }
 }
