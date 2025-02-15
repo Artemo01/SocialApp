@@ -22,34 +22,29 @@ import { ButtonsModule } from 'ngx-bootstrap/buttons';
   styleUrl: './member-list.component.scss',
 })
 export class MemberListComponent implements OnInit {
-  public userParams!: UserParams;
   public genderList = [
     { value: 'male', display: 'Males' },
     { value: 'female', display: 'Females' },
   ];
 
-  constructor(
-    private accountService: AccountService,
-    public membersService: MembersService
-  ) {}
+  constructor(public membersService: MembersService) {}
 
   public ngOnInit(): void {
-    this.userParams = new UserParams(this.accountService.currentUser());
     if (!this.membersService.paginatedResult()) this.loadMembers();
   }
 
   public loadMembers(): void {
-    this.membersService.getMembers(this.userParams);
+    this.membersService.getMembers();
   }
 
   public resetFilters(): void {
-    this.userParams = new UserParams(this.accountService.currentUser());
+    this.membersService.resetUserParams();
     this.loadMembers();
   }
 
   public pageChanged(event: PageChangedEvent): void {
-    if (this.userParams.pageNumber !== event.page) {
-      this.userParams.pageNumber = event.page;
+    if (this.membersService.userParams().pageNumber !== event.page) {
+      this.membersService.userParams().pageNumber = event.page;
       this.loadMembers();
     }
   }

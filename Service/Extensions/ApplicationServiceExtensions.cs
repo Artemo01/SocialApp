@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Service.Data;
+using Service.Helpers;
 using Service.Interfaces;
 using Service.Services;
 
@@ -17,6 +18,7 @@ public static class ApplicationServiceExtensions
         services.AddCors();
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<LogUserActivity>();
         services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
         
         return services;

@@ -5,11 +5,12 @@ import { Member } from '../../models/member.model';
 import { CommonModule } from '@angular/common';
 import { TabsModule } from 'ngx-bootstrap/tabs';
 import { GalleryItem, GalleryModule, ImageItem } from 'ng-gallery';
+import { TimeagoModule } from 'ngx-timeago';
 
 @Component({
   selector: 'app-member-detail',
   standalone: true,
-  imports: [CommonModule, TabsModule, GalleryModule],
+  imports: [CommonModule, TabsModule, GalleryModule, TimeagoModule],
   templateUrl: './member-detail.component.html',
   styleUrl: './member-detail.component.scss',
 })

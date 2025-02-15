@@ -1,10 +1,18 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { Injectable, signal } from '@angular/core';
+import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
+import {
+  Injectable,
+  model,
+  Signal,
+  signal,
+  WritableSignal,
+} from '@angular/core';
 import { environment } from '../../environments/environment';
 import { Member } from '../models/member.model';
 import { Observable, of, Subscription, tap } from 'rxjs';
 import { PaginationResult } from '../models/pagination.model';
 import { UserParams } from '../models/userParams.model';
+import { AccountService } from './account.service';
+import { User } from '../models/user.model';
 
 @Injectable({
   providedIn: 'root',
@@ -12,35 +20,58 @@ import { UserParams } from '../models/userParams.model';
 export class MembersService {
   private readonly baseUrl = environment.apiUrl;
   public paginatedResult = signal<PaginationResult<Member[]> | null>(null);
+  public userParams: WritableSignal<UserParams>;
+  public memberCache = new Map();
+  public user: User | null;
 
-  constructor(private readonly http: HttpClient) {}
+  constructor(
+    private readonly http: HttpClient,
+    private readonly accountService: AccountService
+  ) {
+    this.user = this.accountService.currentUser();
+    this.userParams = signal<UserParams>(new UserParams(this.user));
+  }
 
-  public getMembers(userParams: UserParams): Subscription {
-    let params = this.setPaginationHeaders(
-      userParams.pageNumber,
-      userParams.pageSize
+  public resetUserParams(): void {
+    this.userParams.set(new UserParams(this.user));
+  }
+
+  public getMembers(): void | Subscription {
+    const response = this.memberCache.get(
+      Object.values(this.userParams()).join('-')
     );
 
-    params = params.append('minAge', userParams.minAge);
-    params = params.append('maxAge', userParams.maxAge);
-    params = params.append('gender', userParams.gender);
-    params = params.append('orderBy', userParams.orderBy);
+    if (response) return this.setPaginatedResponse(response);
+
+    let params = this.setPaginationHeaders(
+      this.userParams().pageNumber,
+      this.userParams().pageSize
+    );
+
+    params = params.append('minAge', this.userParams().minAge);
+    params = params.append('maxAge', this.userParams().maxAge);
+    params = params.append('gender', this.userParams().gender);
+    params = params.append('orderBy', this.userParams().orderBy);
 
     return this.http
       .get<Member[]>(this.baseUrl + 'users', { observe: 'response', params })
       .subscribe({
         next: (response) => {
-          this.paginatedResult.set({
-            items: response.body as Member[],
-            pagination: JSON.parse(response.headers.get('Pagination')!),
-          });
+          this.setPaginatedResponse(response);
+          this.memberCache.set(
+            Object.values(this.userParams()).join('-'),
+            response
+          );
         },
       });
   }
 
   public getMember(username: string): Observable<Member> {
-    // const member = this.members().find((member) => member.username == username);
-    // if (member != null) return of(member);
+    const member: Member = [...this.memberCache.values()]
+      .reduce((array, element) => array.concat(element.body), [])
+      .find((m: Member) => m.username === username);
+
+    if (member) return of(member);
 
     return this.http.get<Member>(this.baseUrl + 'users/' + username);
   }
@@ -55,6 +86,13 @@ export class MembersService {
       //   )
       // )
       ();
+  }
+
+  private setPaginatedResponse(response: HttpResponse<Member[]>): void {
+    this.paginatedResult.set({
+      items: response.body as Member[],
+      pagination: JSON.parse(response.headers.get('Pagination')!),
+    });
   }
 
   private setPaginationHeaders(

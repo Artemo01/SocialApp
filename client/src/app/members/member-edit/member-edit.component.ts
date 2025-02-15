@@ -6,11 +6,12 @@ import { CommonModule } from '@angular/common';
 import { TabsModule } from 'ngx-bootstrap/tabs';
 import { FormsModule, NgForm } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
+import { TimeagoModule } from 'ngx-timeago';
 
 @Component({
   selector: 'app-member-edit',
   standalone: true,
-  imports: [CommonModule, TabsModule, FormsModule],
+  imports: [CommonModule, TabsModule, FormsModule, TimeagoModule],
   templateUrl: './member-edit.component.html',
   styleUrl: './member-edit.component.scss',
 })
