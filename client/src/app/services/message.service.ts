@@ -44,7 +44,7 @@ export class MessageService {
     );
   }
 
-  public sendMessage(username: string, content: string) {
+  public sendMessage(username: string, content: string): Observable<Message> {
     return this.http.post<Message>(this.baseUrl + 'messages', {
       recipientUsername: username,
       content,

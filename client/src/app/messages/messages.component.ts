@@ -42,7 +42,7 @@ export class MessagesComponent implements OnInit {
     );
   }
 
-  public deleteMessage(id: number) {
+  public deleteMessage(id: number): void {
     this.messageService.deleteMessage(id).subscribe({
       next: (_) => {
         this.messageService.paginatedResult.update((prev) => {
@@ -59,7 +59,7 @@ export class MessagesComponent implements OnInit {
     });
   }
 
-  public getRoute(message: Message) {
+  public getRoute(message: Message): string {
     if (this.container === 'Outbox')
       return `/members/${message.recipientUsername}`;
     else return `/members/${message.senderUsername}`;
