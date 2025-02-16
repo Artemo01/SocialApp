@@ -42,6 +42,23 @@ export class MessagesComponent implements OnInit {
     );
   }
 
+  public deleteMessage(id: number) {
+    this.messageService.deleteMessage(id).subscribe({
+      next: (_) => {
+        this.messageService.paginatedResult.update((prev) => {
+          if (prev && prev.items) {
+            prev.items.splice(
+              prev.items.findIndex((message) => message.id === id),
+              1
+            );
+            return prev;
+          }
+          return prev;
+        });
+      },
+    });
+  }
+
   public getRoute(message: Message) {
     if (this.container === 'Outbox')
       return `/members/${message.recipientUsername}`;

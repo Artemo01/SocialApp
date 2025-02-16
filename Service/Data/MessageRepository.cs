@@ -31,8 +31,10 @@ public class MessageRepository(DataContext context, IMapper mapper) : IMessageRe
 
         query = messageParams.Container switch
         {
-            "Inbox" => query.Where(message => message.Recipient.UserName == messageParams.Username),
-            "Outbox" => query.Where(message => message.Sender.UserName == messageParams.Username),
+            "Inbox" => query.Where(message =>
+                message.Recipient.UserName == messageParams.Username && message.RecipientDeleted == false),
+            "Outbox" => query.Where(message =>
+                message.Sender.UserName == messageParams.Username && message.SenderDeleted == false),
             _ => query.Where(
                 message => message.Recipient.UserName == messageParams.Username && message.DateRead == null),
         };
@@ -48,8 +50,12 @@ public class MessageRepository(DataContext context, IMapper mapper) : IMessageRe
             .Include(message => message.Sender).ThenInclude(message => message.Photos)
             .Include(message => message.Recipient).ThenInclude(message => message.Photos)
             .Where(message => 
-                message.RecipientUsername == currentUsername && message.SenderUsername == recipientUsername || 
-                message.SenderUsername == currentUsername && message.RecipientUsername == recipientUsername)
+                message.RecipientUsername == currentUsername && 
+                message.RecipientDeleted == false &&
+                message.SenderUsername == recipientUsername || 
+                message.SenderUsername == currentUsername && 
+                message.SenderDeleted == false && 
+                message.RecipientUsername == recipientUsername)
             .OrderBy(message => message.MessageSent)
             .ToListAsync();
         
