@@ -1,0 +1,70 @@
+<div class="card">
+  <div class="card-body">
+    <div *ngIf="messages().length !== 0; else noMessages">
+      <ul *ngFor="let message of messages()" class="chat">
+        <li>
+          <div>
+            <span class="chat-img float-end">
+              <img
+                class="rounded-circle"
+                src="{{ message.senderPhotoUrl || './assets/user.png' }}"
+                alt="sender"
+              />
+            </span>
+            <div class="chat-body">
+              <div class="header">
+                <small class="test-muted">
+                  <span class="fa fa-clock-o">{{
+                    message.messageSent | timeago
+                  }}</span>
+                  <span
+                    *ngIf="
+                      !message.dateRead && message.senderUsername !== username()
+                    "
+                    class="text-danger"
+                    >(unread)</span
+                  >
+                  <span
+                    *ngIf="
+                      message.dateRead && message.senderUsername !== username()
+                    "
+                    class="text-success"
+                    >(read {{ message.dateRead | timeago }})</span
+                  >
+                </small>
+              </div>
+              <p>{{ message.content }}</p>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+  <div class="card-footer">
+    <form #messageForm="ngForm" (ngSubmit)="sendMessage()">
+      <div class="input-group">
+        <input
+          name="messageContent"
+          required
+          [(ngModel)]="messageContent"
+          type="text"
+          class="form-control input-sm"
+          placeholder="Send a provate message"
+        />
+        <div class="input-group-append">
+          <button
+            [disabled]="!messageForm.valid"
+            class="btn btn-primary"
+            type="submit"
+          >
+            Send
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<ng-template #noMessages>
+  <p>No messages yet</p>
+</ng-template>
