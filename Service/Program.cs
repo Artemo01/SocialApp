@@ -4,6 +4,7 @@ using Service.Data;
 using Service.Extensions;
 using Service.Middleware;
 using Service.Models;
+using Service.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,12 +15,13 @@ builder.Services.AddIdentityService(builder.Configuration);
 var app = builder.Build();
 
 app.UseMiddleware<ExceptionMiddleware>();
-app.UseCors(x => x.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+app.UseCors(x => x.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader().AllowCredentials());
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<PresenceHub>("hubs/presence");
 
 using var scope = app.Services.CreateScope();
 var services = scope.ServiceProvider;
