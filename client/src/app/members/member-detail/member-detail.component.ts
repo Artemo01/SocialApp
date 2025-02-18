@@ -1,5 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { MembersService } from '../../services/members.service';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Member } from '../../models/member.model';
 import { CommonModule } from '@angular/common';
@@ -9,6 +8,8 @@ import { TimeagoModule } from 'ngx-timeago';
 import { MemberMessagesComponent } from '../member-messages/member-messages.component';
 import { Message } from '../../models/message.model';
 import { MessageService } from '../../services/message.service';
+import { PresenceService } from '../../services/presence.service';
+import { AccountService } from '../../services/account.service';
 
 @Component({
   selector: 'app-member-detail',
@@ -23,17 +24,17 @@ import { MessageService } from '../../services/message.service';
   templateUrl: './member-detail.component.html',
   styleUrl: './member-detail.component.scss',
 })
-export class MemberDetailComponent implements OnInit {
+export class MemberDetailComponent implements OnInit, OnDestroy {
   @ViewChild('memberTabs', { static: true }) memberTabs?: TabsetComponent;
   public member: Member = {} as Member;
   public images: GalleryItem[] = [];
   public activeTab?: TabDirective;
-  public messages: Message[] = [];
 
   constructor(
-    private readonly memberService: MembersService,
     private readonly route: ActivatedRoute,
-    private readonly messageService: MessageService
+    private readonly messageService: MessageService,
+    private readonly accountService: AccountService,
+    public presenceService: PresenceService
   ) {}
 
   public ngOnInit(): void {
@@ -56,8 +57,8 @@ export class MemberDetailComponent implements OnInit {
     });
   }
 
-  public onUpdateMessages(event: Message) {
-    this.messages.push(event);
+  public ngOnDestroy(): void {
+    this.messageService.stopHubConnection();
   }
 
   public selectTab(heaing: string): void {
@@ -71,27 +72,12 @@ export class MemberDetailComponent implements OnInit {
 
   public onTabActibated(data: TabDirective): void {
     this.activeTab = data;
-    if (
-      this.activeTab.heading === 'Messages' &&
-      this.messages.length === 0 &&
-      this.member
-    ) {
-      this.messageService.getMessageThread(this.member.username).subscribe({
-        next: (messages) => (this.messages = messages),
-      });
+    if (this.activeTab.heading === 'Messages' && this.member) {
+      const user = this.accountService.currentUser();
+      if (!user) return;
+      this.messageService.createHubConnection(user, this.member.username);
+    } else {
+      this.messageService.stopHubConnection();
     }
   }
-
-  // public loadMember(): void {
-  //   const username = this.route.snapshot.paramMap.get('username');
-  //   if (!username) return;
-  //   this.memberService.getMember(username).subscribe({
-  //     next: (member) => {
-  //       this.member = member;
-  //       member.photos.map((photo) => {
-  //         this.images.push(new ImageItem({ src: photo.url, thumb: photo.url }));
-  //       });
-  //     },
-  //   });
-  // }
 }

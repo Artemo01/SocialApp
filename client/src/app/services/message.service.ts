@@ -8,15 +8,50 @@ import {
   setPaginationHeaders,
 } from './pagination.helper';
 import { Observable, Subscription } from 'rxjs';
+import {
+  HubConnection,
+  HubConnectionBuilder,
+  HubConnectionState,
+} from '@microsoft/signalr';
+import { User } from '../models/user.model';
 
 @Injectable({
   providedIn: 'root',
 })
 export class MessageService {
   public baseUrl = environment.apiUrl;
+  public hubUrl = environment.hubsUrl;
   public paginatedResult = signal<PaginationResult<Message[]> | null>(null);
+  public messageThread = signal<Message[]>([]);
+
+  private hubConnection?: HubConnection;
 
   constructor(private http: HttpClient) {}
+
+  public createHubConnection(user: User, otherUsername: string): void {
+    this.hubConnection = new HubConnectionBuilder()
+      .withUrl(this.hubUrl + 'message?user=' + otherUsername, {
+        accessTokenFactory: () => user.token,
+      })
+      .withAutomaticReconnect()
+      .build();
+
+    this.hubConnection.start().catch((error) => console.log(error));
+
+    this.hubConnection.on('ReceiveMessageThread', (messages) => {
+      this.messageThread.set(messages);
+    });
+
+    this.hubConnection.on('NewMessage', (message) => {
+      this.messageThread.update((messages) => [...messages, message]);
+    });
+  }
+
+  public stopHubConnection(): void {
+    if (this.hubConnection?.state === HubConnectionState.Connected) {
+      this.hubConnection.stop().catch((error) => console.log(error));
+    }
+  }
 
   public getMessages(
     pageNumber: number,
@@ -44,8 +79,8 @@ export class MessageService {
     );
   }
 
-  public sendMessage(username: string, content: string): Observable<Message> {
-    return this.http.post<Message>(this.baseUrl + 'messages', {
+  public async sendMessage(username: string, content: string): Promise<any> {
+    return this.hubConnection?.invoke('SendMessage', {
       recipientUsername: username,
       content,
     });

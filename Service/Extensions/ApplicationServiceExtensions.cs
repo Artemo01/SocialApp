@@ -3,6 +3,7 @@ using Service.Data;
 using Service.Helpers;
 using Service.Interfaces;
 using Service.Services;
+using Service.SignalR;
 
 namespace Service.Extensions;
 
@@ -23,6 +24,7 @@ public static class ApplicationServiceExtensions
         services.AddScoped<LogUserActivity>();
         services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
         services.AddSignalR();
+        services.AddSingleton<PresenceTracker>();
         
         return services;
     }

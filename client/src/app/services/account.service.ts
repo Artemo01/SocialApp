@@ -4,6 +4,7 @@ import { map, Observable } from 'rxjs';
 import { User } from '../models/user.model';
 import { environment } from '../../environments/environment';
 import { LikesService } from './likes.service';
+import { PresenceService } from './presence.service';
 
 @Injectable({
   providedIn: 'root',
@@ -21,7 +22,11 @@ export class AccountService {
     return null;
   });
 
-  constructor(private http: HttpClient, private likesService: LikesService) {}
+  constructor(
+    private http: HttpClient,
+    private likesService: LikesService,
+    private presenceService: PresenceService
+  ) {}
 
   public login(model: any): Observable<void> {
     return this.http.post<User>(this.baseUrl + 'account/login', model).pipe(
@@ -48,11 +53,13 @@ export class AccountService {
   public logout(): void {
     localStorage.removeItem('user');
     this.currentUser.set(null);
+    this.presenceService.stopHubConnection();
   }
 
   public setCurrentUser(user: User) {
     localStorage.setItem('user', JSON.stringify(user));
     this.currentUser.set(user);
     this.likesService.getLikeIds();
+    this.presenceService.createHubConnection(user);
   }
 }

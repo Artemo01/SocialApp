@@ -3,6 +3,7 @@ import { Member } from '../../models/member.model';
 import { RouterLink } from '@angular/router';
 import { LikesService } from '../../services/likes.service';
 import { CommonModule } from '@angular/common';
+import { PresenceService } from '../../services/presence.service';
 
 @Component({
   selector: 'app-member-card',
@@ -14,10 +15,18 @@ import { CommonModule } from '@angular/common';
 export class MemberCardComponent {
   public member = input.required<Member>();
   public hasLikes: Signal<boolean>;
+  public isOnline: Signal<boolean>;
 
-  constructor(private likeService: LikesService) {
+  constructor(
+    private likeService: LikesService,
+    private presenceService: PresenceService
+  ) {
     this.hasLikes = computed(() =>
       this.likeService.likeIds().includes(this.member().id)
+    );
+
+    this.isOnline = computed(() =>
+      this.presenceService.onlineUsers().includes(this.member().username)
     );
   }
 
