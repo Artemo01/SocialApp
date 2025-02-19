@@ -14,6 +14,7 @@ import {
   HubConnectionState,
 } from '@microsoft/signalr';
 import { User } from '../models/user.model';
+import { Group } from '../models/group.model';
 
 @Injectable({
   providedIn: 'root',
@@ -23,8 +24,7 @@ export class MessageService {
   public hubUrl = environment.hubsUrl;
   public paginatedResult = signal<PaginationResult<Message[]> | null>(null);
   public messageThread = signal<Message[]>([]);
-
-  private hubConnection?: HubConnection;
+  public hubConnection?: HubConnection;
 
   constructor(private http: HttpClient) {}
 
@@ -44,6 +44,24 @@ export class MessageService {
 
     this.hubConnection.on('NewMessage', (message) => {
       this.messageThread.update((messages) => [...messages, message]);
+    });
+
+    this.hubConnection.on('UpdatedGroup', (group: Group) => {
+      if (
+        group.connections.some(
+          (connection) => connection.username === otherUsername
+        )
+      ) {
+        this.messageThread.update((messages) => {
+          messages.forEach((message) => {
+            if (!message.dateRead) {
+              message.dateRead = new Date(Date.now());
+            }
+          });
+
+          return messages;
+        });
+      }
     });
   }
 
