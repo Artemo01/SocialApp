@@ -8,8 +8,7 @@ using Service.Models;
 namespace Service.SignalR;
 
 public class MessageHub(
-    IMessageRepository messageRepository,
-    IUserRepository userRepository,
+    IUnitOfWork unitOfWork,
     IMapper mapper,
     IHubContext<PresenceHub> presentsHub) : Hub
 {
@@ -26,7 +25,9 @@ public class MessageHub(
         
         await Clients.Group(groupName).SendAsync("UpdateGroup", group);
         
-        var messages = await messageRepository.GetMessageThread(Context.User.GetUsername(), otherUser!);
+        var messages = await unitOfWork.MessageRepository.GetMessageThread(Context.User.GetUsername(), otherUser!);
+
+        if (unitOfWork.HasChanges()) await unitOfWork.Complete();
         
         await Clients.Caller.SendAsync("ReceiveMessageThread", messages);
     }
@@ -44,8 +45,8 @@ public class MessageHub(
         
         if (username == createMessageDto.RecipientUsername.ToLower()) throw new HubException("You cannot message yourself");
 
-        var sender = await userRepository.GetUserByUserNameAsync(username);
-        var recipient = await userRepository.GetUserByUserNameAsync(createMessageDto.RecipientUsername);
+        var sender = await unitOfWork.UserRepository.GetUserByUserNameAsync(username);
+        var recipient = await unitOfWork.UserRepository.GetUserByUserNameAsync(createMessageDto.RecipientUsername);
         
         if (recipient is null || sender == null || sender.UserName == null || recipient.UserName == null) throw new HubException("Cannot send message");
 
@@ -59,7 +60,7 @@ public class MessageHub(
         };
         
         var groupName = GetGroupName(sender.UserName, recipient.UserName);
-        var group = await messageRepository.GetMessageGroup(groupName);
+        var group = await unitOfWork.MessageRepository.GetMessageGroup(groupName);
 
         if (group != null && group.Connections.Any(x => x.Username == recipient.UserName))
         {
@@ -75,9 +76,9 @@ public class MessageHub(
             }
         }
         
-        messageRepository.AddMessage(message);
+        unitOfWork.MessageRepository.AddMessage(message);
 
-        if (await messageRepository.SaveAllAsync())
+        if (await unitOfWork.Complete())
         {
             await Clients.Group(groupName).SendAsync("NewMessage", mapper.Map<MessageDto>(message));
         }
@@ -87,7 +88,7 @@ public class MessageHub(
     private async Task<Group> AddToGroup(string groupName)
     {
         var username = Context.User?.GetUsername() ?? throw new Exception("Could not get user");
-        var group = await messageRepository.GetMessageGroup(groupName);
+        var group = await unitOfWork.MessageRepository.GetMessageGroup(groupName);
         var connection = new Connection
         {
             ConnectionId = Context.ConnectionId,
@@ -97,24 +98,24 @@ public class MessageHub(
         if (group == null)
         {
             group = new Group {Name = groupName};
-            messageRepository.AddGroup(group);
+            unitOfWork.MessageRepository.AddGroup(group);
         }
         
         group.Connections.Add(connection);
 
-        if (await messageRepository.SaveAllAsync()) return group;
+        if (await unitOfWork.Complete()) return group;
         
         throw new HubException("Failed to join group");
     }
 
     private async Task<Group> RemoveFromMessageGroup()
     {
-        var group = await messageRepository.GetGroupForConnection(Context.ConnectionId);
+        var group = await unitOfWork.MessageRepository.GetGroupForConnection(Context.ConnectionId);
         var connection = group?.Connections.FirstOrDefault(connection => connection.ConnectionId == Context.ConnectionId);
         if (connection != null && group != null)
         {
-            messageRepository.RemoveConnection(connection);
-            if (await messageRepository.SaveAllAsync()) return group;
+            unitOfWork.MessageRepository.RemoveConnection(connection);
+            if (await unitOfWork.Complete()) return group;
         }
         
         throw new HubException("Failed to remove from group");

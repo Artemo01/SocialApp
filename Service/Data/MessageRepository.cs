@@ -64,15 +64,9 @@ public class MessageRepository(DataContext context, IMapper mapper) : IMessageRe
         if (unreadMessages.Count != 0)
         {
             unreadMessages.ForEach(message => message.DateRead = DateTime.UtcNow);
-            await context.SaveChangesAsync();
         }
 
         return messages;
-    }
-
-    public async Task<bool> SaveAllAsync()
-    {
-        return await context.SaveChangesAsync() > 0;
     }
 
     public void AddGroup(Group group)
